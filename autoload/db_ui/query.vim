@@ -367,6 +367,17 @@ function! s:query.edit_bind_parameters() abort
   return db_ui#notifications#info('Canceled')
 endfunction
 
+function! db_ui#query#listcompletion(A,L,P)
+    return fnamemodify(globpath('/home/mikhail/.local/share/db_ui/test/'.a:A.'*', ''), ':gs?/home/mikhail/.local/share/db_ui/test/??')
+endfunction
+
+function! s:set_db_to_complete(path)
+    let l:path = a:path.db_ui#utils#slash()
+    function! List_completion(A,L,P) closure
+      return fnamemodify(globpath(l:path.a:A.'*', ''), ':gs?'.l:path.'??')
+    endfunction
+endfunction
+
 function! s:query.save_query() abort
   try
     let db = self.drawer.dbui.dbs[b:dbui_db_key_name]
@@ -374,12 +385,9 @@ function! s:query.save_query() abort
       throw 'Save location is empty. Please provide valid directory to g:db_ui_save_location'
     endif
 
-    if !isdirectory(db.save_path)
-      call mkdir(db.save_path, 'p')
-    endif
-
+    call s:set_db_to_complete(db.save_path)
     try
-      let name = db_ui#utils#input('Save as: ', '')
+      let name = db_ui#utils#input_with_completion('Save as: ', '', 'custom,List_completion')
     catch /.*/
       return db_ui#notifications#error(v:exception)
     endtry
@@ -392,6 +400,10 @@ function! s:query.save_query() abort
 
     if filereadable(full_name)
       throw 'That file already exists. Please choose another name.'
+    endif
+
+    if !isdirectory(fnamemodify(full_name, ':h'))
+      call mkdir(fnamemodify(full_name, ':h'), 'p')
     endif
 
     exe 'write '.full_name

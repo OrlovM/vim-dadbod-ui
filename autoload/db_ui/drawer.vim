@@ -436,11 +436,9 @@ function! s:drawer.add_db(db) abort
   endif
   call self.add('Saved queries ('.len(a:db.saved_queries.list).')', 'toggle', 'saved_queries', self.get_toggle_icon('saved_queries', a:db.saved_queries), a:db.key_name, 1, { 'expanded': a:db.saved_queries.expanded })
   if a:db.saved_queries.expanded
-    for saved_query in a:db.saved_queries.list
-      call self.add(fnamemodify(saved_query, ':t'), 'open', 'buffer', g:db_ui_icons.saved_query, a:db.key_name, 2, { 'file_path': saved_query, 'saved': 1 })
-    endfor
+  call self.populate_folder(a:db, a:db.save_path, 2)
   endif
-
+  
   if a:db.schema_support
     call self.add('Schemas ('.len(a:db.schemas.items).')', 'toggle', 'schemas', self.get_toggle_icon('schemas', a:db.schemas), a:db.key_name, 1, { 'expanded': a:db.schemas.expanded })
     if a:db.schemas.expanded
@@ -496,6 +494,16 @@ function! s:drawer.toggle_line(edit_action) abort
   let db = self.dbui.dbs[item.dbui_db_key_name]
 
   let tree = db
+
+  if item.action ==? 'toggle_folder'
+    for folder in db.saved_queries.folders
+      if folder.path == item.type 
+        let folder.expanded = !folder.expanded
+      endif
+    endfor
+    return self.render()
+  endif
+
   if item.type !=? 'db'
     let tree = self.get_nested(db, item.type)
   endif
@@ -597,8 +605,42 @@ endfunction
 
 function! s:drawer.load_saved_queries(db) abort
   if !empty(a:db.save_path)
-    let a:db.saved_queries.list = split(glob(printf('%s/*', a:db.save_path)), "\n")
+    let a:db.saved_queries.list = []
+    let a:db.saved_queries.folders = []
+    call self.load_saved_queries_in_folder(a:db, a:db.save_path)
   endif
+endfunction
+
+function! s:drawer.load_saved_queries_in_folder(db, path) abort
+    let l:dirs = []
+    let l:queries = []
+    for item in  split(globpath(a:path, "*"), "\n")
+      if isdirectory(item)
+        call add(l:dirs, { 'path': item, 'expanded': 0 })
+        call self.load_saved_queries_in_folder(a:db, item)
+      else
+        call add(l:queries, item)
+      endif
+    endfor
+    let a:db.saved_queries.list = a:db.saved_queries.list + l:queries
+    let a:db.saved_queries.folders = a:db.saved_queries.folders + l:dirs
+endfunction
+
+function! s:drawer.populate_folder(db, path, level) abort
+    for folder in a:db.saved_queries.folders
+      if fnamemodify(folder.path, ':h') == a:path
+       call self.add(fnamemodify(folder.path, ':t'), 'toggle_folder', folder.path, self.get_toggle_icon('saved_queries', folder), a:db.key_name, a:level, { 'expanded': folder.expanded })
+       if folder.expanded 
+         call self.populate_folder(a:db, folder.path, a:level + 1)
+       endif
+      endif
+    endfor
+
+    for saved_query in a:db.saved_queries.list
+      if fnamemodify(saved_query, ':h') == a:path
+        call self.add(fnamemodify(saved_query, ':t'), 'open', 'buffer', g:db_ui_icons.saved_query, a:db.key_name, a:level, { 'file_path': saved_query, 'saved': 1 })
+      endif
+    endfor
 endfunction
 
 function! s:drawer.populate_tables(db) abort

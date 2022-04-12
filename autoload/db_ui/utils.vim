@@ -6,6 +6,10 @@ function! db_ui#utils#input(name, default) abort
   return input(a:name, a:default)
 endfunction
 
+function! db_ui#utils#input_with_completion(name, default, completion) abort
+  return input(a:name, a:default, a:completion)
+endfunction
+
 function! db_ui#utils#inputlist(list) abort
   return inputlist(a:list)
 endfunction
@@ -59,4 +63,20 @@ function! db_ui#utils#print_debug(msg) abort
   endif
 
   echom '[DBUI Debug] '.string(a:msg)
+endfunction
+
+function! db_ui#utils#runningWindows() abort
+    return has('win16') || has('win32') || has('win64')
+endfunction
+
+function! db_ui#utils#slash() abort
+    if db_ui#utils#runningWindows()
+        if exists('+shellslash') && &shellslash
+            return '/'
+        endif
+
+        return '\'
+    endif
+
+    return '/'
 endfunction

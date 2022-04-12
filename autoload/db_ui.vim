@@ -252,7 +252,7 @@ function! s:dbui.generate_new_db_entry(db) abort
         \ 'expanded': 0,
         \ 'tables': {'expanded': 0 , 'items': {}, 'list': [] },
         \ 'schemas': {'expanded': 0, 'items': {}, 'list': [] },
-        \ 'saved_queries': { 'expanded': 0, 'list': [] },
+        \ 'saved_queries': { 'expanded': 0, 'list': [], 'folders':[] },
         \ 'buffers': { 'expanded': 0, 'list': buffers, 'tmp': [] },
         \ 'save_path': save_path,
         \ 'db_name': !empty(db_name) ? db_name : a:db.name,
@@ -382,6 +382,7 @@ function! s:dbui.connect(db) abort
   try
     let query_time = reltime()
     call db_ui#notifications#info('Connecting to db '.a:db.name.'...', { 'echo': 1 })
+    echom 'test1'
     let a:db.conn = db#connect(a:db.url)
     let a:db.conn_error = ''
     if v:shell_error ==? 0
