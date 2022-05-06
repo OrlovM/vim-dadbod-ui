@@ -531,6 +531,10 @@ function! s:drawer.delete_line() abort
     return
   endif
 
+  if item.action ==? 'toggle_folder'
+    return
+  endif
+
   if item.action ==? 'toggle' && item.type ==? 'db'
     let db = self.dbui.dbs[item.dbui_db_key_name]
     if db.source !=? 'file'
